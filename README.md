@@ -15,6 +15,8 @@
 >
 > Everything else is upstream code; bugs in the shared parts belong upstream.
 
+> **hue_beat, extension optionnelle.** Les outils `hue_beat_*` pilotent une synchronisation lumière / musique par l'Entertainment API (DTLS). Ils appellent le script `hue_beat.py` du projet [ironman-hue](https://github.com/amineutron/ironman-hue) (à publier) : indiquez son chemin avec la variable `HUE_BEAT_PATH`. Sans elle, ces outils répondent « hue_beat.py introuvable » et tout le reste fonctionne normalement.
+
 A powerful Model Context Protocol (MCP) interface for controlling Philips Hue smart lighting systems. Enable AI assistants like Claude to control your lights using natural language.
 
 ## Table of Contents
