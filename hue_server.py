@@ -1186,7 +1186,7 @@ def set_light_effect(light_id: int, effect: str, ctx: Context) -> str:
 
 # --- HueBeat : controle du beat-sync Entertainment API ---
 
-_HUE_BEAT_PY    = os.environ.get("HUE_BEAT_PATH", "/home/amineutron/dev/ironman-hue/hue_beat.py")
+_HUE_BEAT_PY    = os.environ.get("HUE_BEAT_PATH", "")  # chemin vers hue_beat.py (projet ironman-hue), optionnel
 _HUE_BEAT_PID   = "/tmp/ironman_hue.pid"
 _HUE_BEAT_CTRL  = "/tmp/lyra_hue_beat.ctrl"
 _HUE_BEAT_STATE = "/tmp/lyra_hue_beat.state.json"
