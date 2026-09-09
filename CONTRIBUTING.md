@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the Philips Hue MCP Server! This 
 
 1. **Fork and clone the repository:**
    ```bash
-   git clone https://github.com/ThomasRohde/hue-mcp.git
+   git clone https://github.com/amineutron/hue-mcp.git
    cd hue-mcp
    ```
 

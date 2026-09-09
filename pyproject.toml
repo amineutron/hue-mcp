@@ -6,6 +6,9 @@ readme = "README.md"
 authors = [
     { name = "Thomas Rohde" }
 ]
+maintainers = [
+    { name = "amineutron" }
+]
 license = { text = "MIT" }
 keywords = ["mcp", "philips-hue", "smart-home", "lighting", "home-automation"]
 classifiers = [
@@ -35,9 +38,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ThomasRohde/hue-mcp"
-Repository = "https://github.com/ThomasRohde/hue-mcp"
-Issues = "https://github.com/ThomasRohde/hue-mcp/issues"
+Homepage = "https://github.com/amineutron/hue-mcp"
+Upstream = "https://github.com/ThomasRohde/hue-mcp"
+Repository = "https://github.com/amineutron/hue-mcp"
+Issues = "https://github.com/amineutron/hue-mcp/issues"
 
 [tool.ruff]
 line-length = 100

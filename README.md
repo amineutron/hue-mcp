@@ -4,6 +4,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io)
 
+> **Changes in this fork** (amineutron/hue-mcp, forked from [ThomasRohde/hue-mcp](https://github.com/ThomasRohde/hue-mcp))
+> *Ce dépôt est un fork : le serveur d'origine est l'oeuvre de Thomas Rohde (MIT).*
+>
+> Additions kept on top of upstream, used by the [Lyra](https://github.com/amineutron/lyra) voice assistant:
+> - `activate_scene_by_name` and `resolve_light_id`: address scenes and lights by their human name;
+> - `normalize_text`: accent and case insensitive matching for French names;
+> - `hue_beat_start`, `hue_beat_stop`, `hue_beat_status`, `hue_beat_set`: audio beat sync through the Hue Entertainment API. These tools are **optional** and need the external `hue_beat.py` script (set `HUE_BEAT_PATH`); without it they answer with a clear error;
+> - fixes: `config.json` written with mode 0600, tool failures raised as MCP errors (`isError`).
+>
+> Everything else is upstream code; bugs in the shared parts belong upstream.
+
 A powerful Model Context Protocol (MCP) interface for controlling Philips Hue smart lighting systems. Enable AI assistants like Claude to control your lights using natural language.
 
 ## Table of Contents
@@ -83,7 +94,7 @@ Then in Claude, start with: "I'd like to control my Philips Hue lights. Can you 
 
 ```bash
 # Clone the repository
-git clone https://github.com/ThomasRohde/hue-mcp.git
+git clone https://github.com/amineutron/hue-mcp.git
 cd hue-mcp
 
 # Install dependencies and create virtual environment automatically
@@ -97,7 +108,7 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 ```bash
 # Clone the repository
-git clone https://github.com/ThomasRohde/hue-mcp.git
+git clone https://github.com/amineutron/hue-mcp.git
 cd hue-mcp
 
 # Create and activate a virtual environment
