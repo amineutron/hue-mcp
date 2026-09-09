@@ -19,6 +19,12 @@
 
 A powerful Model Context Protocol (MCP) interface for controlling Philips Hue smart lighting systems. Enable AI assistants like Claude to control your lights using natural language.
 
+## Demo
+
+![MCP client: the 28 tools, then get_all_lights on a real bridge](docs/assets/demo.gif)
+
+Recorded against a real bridge with [`docs/demo/record.sh`](docs/demo/record.sh): a minimal MCP client ([`docs/demo/mcp_demo.py`](docs/demo/mcp_demo.py)) starts the server over stdio, lists the tools and calls `get_all_lights` (read-only). Private IP addresses are replaced with documentation addresses.
+
 ## Table of Contents
 
 - [Philips Hue MCP Server](#philips-hue-mcp-server)
