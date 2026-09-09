@@ -60,7 +60,7 @@ from phue import Bridge
 # You can customize these values or load from a config file
 
 # Bridge IP - can be set to None for auto-discovery
-BRIDGE_IP = None  # Example: "192.168.1.100"
+BRIDGE_IP = None  # Example: "192.0.2.100"
 
 # Path to store bridge connection info
 CONFIG_DIR = os.path.expanduser("~/.hue-mcp")
