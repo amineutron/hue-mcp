@@ -53,7 +53,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
 from phue import Bridge
 
 # --- Configuration ---
@@ -80,7 +80,7 @@ class HueContext:
     light_info: dict[str, Any]  # Cache of light information
 
 @asynccontextmanager
-async def hue_lifespan(server: FastMCP) -> AsyncIterator[HueContext]:
+async def hue_lifespan(server: MCPServer) -> AsyncIterator[HueContext]:
     """
     Manage connection to Hue Bridge.
 
@@ -145,7 +145,7 @@ async def hue_lifespan(server: FastMCP) -> AsyncIterator[HueContext]:
         pass
 
 # Create MCP server
-mcp = FastMCP(
+mcp = MCPServer(
     "Philips Hue Controller",
     lifespan=hue_lifespan,
     dependencies=["phue"]
