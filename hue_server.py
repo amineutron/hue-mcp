@@ -71,6 +71,10 @@ logging.basicConfig(level=logging.INFO,
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("hue-mcp")
 
+# phue journalise « Using username: <identifiant> » au niveau INFO a chaque connexion :
+# cet identifiant est le secret d'appairage du pont, il n'a rien a faire dans les journaux.
+logging.getLogger("phue").setLevel(logging.WARNING)
+
 # --- Server Context Setup ---
 
 @dataclass
