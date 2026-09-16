@@ -54,6 +54,7 @@ from pathlib import Path
 from typing import Any
 
 from mcp.server.mcpserver import Context, MCPServer
+from mcp.types import ToolAnnotations
 from phue import Bridge
 
 # --- Configuration ---
@@ -283,7 +284,16 @@ def format_light_info(light_info: dict[str, Any]) -> dict[str, Any]:
 
 # --- Convert Resources to Tools ---
 
-@mcp.tool()
+# Profils d'annotations MCP (ToolAnnotations) : ils disent au client ce que fait
+# un outil avant de l'appeler. Aucun outil de ce serveur n'ecrase de donnee,
+# donc destructiveHint reste False ; la distinction utile est la lecture seule
+# et l'idempotence (rejouable sans effet cumulatif).
+_READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True)
+_SET = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=True)
+_ACTION = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=True)
+
+
+@mcp.tool(annotations=_READ)
 def get_all_lights(ctx: Context) -> str:
     """
     Get information about all lights connected to the Hue bridge.
@@ -298,7 +308,7 @@ def get_all_lights(ctx: Context) -> str:
 
     return json.dumps(formatted_info, indent=2)
 
-@mcp.tool()
+@mcp.tool(annotations=_READ)
 def get_light(light_id: int, ctx: Context) -> str:
     """
     Get detailed information about a specific light.
@@ -324,7 +334,7 @@ def get_light(light_id: int, ctx: Context) -> str:
         logger.error(f"Error getting light {light_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_READ)
 def get_all_groups(ctx: Context) -> str:
     """
     Get information about all light groups.
@@ -353,7 +363,7 @@ def get_all_groups(ctx: Context) -> str:
         logger.error(f"Error getting groups: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_READ)
 def get_group(group_id: int, ctx: Context) -> str:
     """
     Get information about a specific light group.
@@ -381,7 +391,7 @@ def get_group(group_id: int, ctx: Context) -> str:
         logger.error(f"Error getting group {group_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_READ)
 def get_all_scenes(ctx: Context) -> str:
     """
     Get information about all scenes.
@@ -412,7 +422,7 @@ def get_all_scenes(ctx: Context) -> str:
 
 # --- Tools ---
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def turn_on_light(ctx: Context, light_id: int = 0, light_name: str = "") -> str:
     """
     Turn on a specific light by ID or by name.
@@ -439,7 +449,7 @@ def turn_on_light(ctx: Context, light_id: int = 0, light_name: str = "") -> str:
         logger.error(f"Error turning on light: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def turn_off_light(ctx: Context, light_id: int = 0, light_name: str = "") -> str:
     """
     Turn off a specific light by ID or by name.
@@ -466,7 +476,7 @@ def turn_off_light(ctx: Context, light_id: int = 0, light_name: str = "") -> str
         logger.error(f"Error turning off light: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_brightness(light_id: int, brightness: int, ctx: Context) -> str:
     """
     Set the brightness of a light.
@@ -501,7 +511,7 @@ def set_brightness(light_id: int, brightness: int, ctx: Context) -> str:
         logger.error(f"Error setting brightness for light {light_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_color_rgb(light_id: int, red: int, green: int, blue: int, ctx: Context) -> str:
     """
     Set light color using RGB values.
@@ -540,7 +550,7 @@ def set_color_rgb(light_id: int, red: int, green: int, blue: int, ctx: Context) 
         logger.error(f"Error setting RGB color for light {light_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_color_temperature(light_id: int, temperature: int, ctx: Context) -> str:
     """
     Set the color temperature of a light in Kelvin.
@@ -589,7 +599,7 @@ def set_color_temperature(light_id: int, temperature: int, ctx: Context) -> str:
         logger.error(f"Error setting color temperature for light {light_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def turn_on_group(ctx: Context, group_id: int = 81) -> str:
     """
     Turn on all lights in a specific group.
@@ -617,7 +627,7 @@ def turn_on_group(ctx: Context, group_id: int = 81) -> str:
         logger.error(f"Error turning on group {group_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def turn_off_group(ctx: Context, group_id: int = 81) -> str:
     """
     Turn off all lights in a specific group.
@@ -645,7 +655,7 @@ def turn_off_group(ctx: Context, group_id: int = 81) -> str:
         logger.error(f"Error turning off group {group_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_group_brightness(brightness: int, ctx: Context, group_id: int = 81) -> str:
     """
     Set the brightness of all lights in a group.
@@ -684,7 +694,7 @@ def set_group_brightness(brightness: int, ctx: Context, group_id: int = 81) -> s
         logger.error(f"Error setting brightness for group {group_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_group_color_rgb(red: int, green: int, blue: int, ctx: Context, group_id: int = 81) -> str:
     """
     Set color for all lights in a group using RGB values.
@@ -723,7 +733,7 @@ def set_group_color_rgb(red: int, green: int, blue: int, ctx: Context, group_id:
         logger.error(f"Error setting color for group {group_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_scene(scene_id: str, ctx: Context, group_id: int = 81) -> str:
     """
     Apply a scene to a group.
@@ -765,7 +775,7 @@ def normalize_text(text: str) -> str:
     without_accents = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
     return without_accents.lower()
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def activate_scene_by_name(scene_name: str, ctx: Context, group_id: int = 81) -> str:
     """
     Find and activate a scene by its name (partial match, accent-insensitive).
@@ -815,7 +825,7 @@ def activate_scene_by_name(scene_name: str, ctx: Context, group_id: int = 81) ->
 
 # --- Helper Tools ---
 
-@mcp.tool()
+@mcp.tool(annotations=_READ)
 def find_light_by_name(name: str, ctx: Context) -> str:
     """
     Find lights by searching their names.
@@ -850,7 +860,7 @@ def find_light_by_name(name: str, ctx: Context) -> str:
         logger.error(f"Error finding lights by name '{name}': {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_ACTION)
 def create_group(
     name: str,
     light_ids: list[int],
@@ -893,7 +903,7 @@ def create_group(
         logger.error(f"Error creating group '{name}': {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def quick_scene(
     name: str,
     ctx: Context,
@@ -962,7 +972,7 @@ def quick_scene(
         logger.error(f"Error applying quick scene '{name}': {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_READ)
 def refresh_lights(ctx: Context) -> str:
     """
     Refresh the light information cache.
@@ -988,7 +998,7 @@ def refresh_lights(ctx: Context) -> str:
         logger.error(f"Error refreshing lights: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_color_preset(
     light_id: int,
     preset: str,
@@ -1057,7 +1067,7 @@ def set_color_preset(
         logger.error(f"Error applying preset '{preset}' to light {light_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_group_color_preset(
     preset: str,
     ctx: Context,
@@ -1122,7 +1132,7 @@ def set_group_color_preset(
         logger.error(f"Error applying preset '{preset}' to group {group_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_ACTION)
 def alert_light(light_id: int, ctx: Context) -> str:
     """
     Make a light flash briefly to identify it.
@@ -1148,7 +1158,7 @@ def alert_light(light_id: int, ctx: Context) -> str:
         logger.error(f"Error alerting light {light_id}: {e}")
         raise
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def set_light_effect(light_id: int, effect: str, ctx: Context) -> str:
     """
     Set a dynamic effect on a light.
@@ -1231,7 +1241,7 @@ def _beat_pid() -> int | None:
         return None
 
 
-@mcp.tool()
+@mcp.tool(annotations=_ACTION)
 def hue_beat_start(mode: str = "", palette: str = "auto", bass_only: bool = True) -> str:
     """Lance hue_beat.py en arriere-plan (Entertainment API DTLS ~5ms).
 
@@ -1274,7 +1284,7 @@ def hue_beat_start(mode: str = "", palette: str = "auto", bass_only: bool = True
     return "hue_beat lance mais PID file absent apres 3s — verifier les logs."
 
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def hue_beat_stop() -> str:
     """Arrete hue_beat proprement (SIGTERM → stop_entertainment → REST reprend)."""
     pid = _beat_pid()
@@ -1292,7 +1302,7 @@ def hue_beat_stop() -> str:
         return "hue_beat deja arrete."
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ)
 def hue_beat_status() -> str:
     """Retourne l'etat de hue_beat (actif/inactif, mode, palette, BPM)."""
     pid = _beat_pid()
@@ -1313,7 +1323,7 @@ def hue_beat_status() -> str:
         return f"hue_beat: ACTIF (PID {pid}) — state file illisible."
 
 
-@mcp.tool()
+@mcp.tool(annotations=_SET)
 def hue_beat_set(palette: str = "", mode: str = "", brightness: float = -1.0,
                  floor: float = -1.0, sensitivity: float = -1.0) -> str:
     """Modifie les parametres de hue_beat a chaud (sans redemarrage).
