@@ -219,8 +219,8 @@ uv run mcp dev hue_server.py --log-level debug
 | `get_all_groups` | Get information about all light groups |
 | `get_group` | Get information about a specific group |
 | `get_all_scenes` | Get information about all scenes |
-| `turn_on_light` | Turn on a specific light |
-| `turn_off_light` | Turn off a specific light |
+| `turn_on_light` | Turn on a specific light, by ID or by name |
+| `turn_off_light` | Turn off a specific light, by ID or by name |
 | `set_brightness` | Adjust light brightness (0-254) |
 | `set_color_rgb` | Set light color using RGB values |
 | `set_color_temperature` | Set light color temperature (2000-6500K) |
@@ -229,6 +229,7 @@ uv run mcp dev hue_server.py --log-level debug
 | `set_group_brightness` | Adjust group brightness (0-254) |
 | `set_group_color_rgb` | Set color for all lights in a group |
 | `set_scene` | Apply a scene to a group |
+| `activate_scene_by_name` | Find a scene by name and apply it (to its own room by default) |
 | `find_light_by_name` | Search for lights by name |
 | `create_group` | Create a new light group |
 | `quick_scene` | Apply custom settings to create a scene |

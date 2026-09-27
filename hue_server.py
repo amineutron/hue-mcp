@@ -206,6 +206,46 @@ def rgb_to_xy(r: int, g: int, b: int) -> list[float]:
 
     return [x, y]
 
+def normalize_name(text: str) -> str:
+    """Lowercase and strip accents, so "Salon", "salon" and "Salón" compare equal."""
+    import unicodedata
+    decomposed = unicodedata.normalize("NFD", text)
+    return "".join(c for c in decomposed if unicodedata.category(c) != "Mn").lower().strip()
+
+def resolve_name(query: str, names: dict[str, str], kind: str) -> tuple[str | None, str | None]:
+    """
+    Resolve a human name to an ID among ``names`` ({id: name}).
+
+    An exact (case and accent insensitive) match wins; otherwise a partial
+    match is accepted only if it is unique. Returns ``(id, None)`` or
+    ``(None, error message)``: an ambiguous name is reported with its
+    candidates instead of silently picking the first one.
+    """
+    wanted = normalize_name(query)
+    if not wanted:
+        return None, f"Error: empty {kind} name."
+    exact = [i for i, n in names.items() if normalize_name(n) == wanted]
+    if len(exact) == 1:
+        return exact[0], None
+    partial = exact or [i for i, n in names.items() if wanted in normalize_name(n)]
+    if len(partial) == 1:
+        return partial[0], None
+    if not partial:
+        return None, f"Error: no {kind} named '{query}'."
+    candidates = ", ".join(sorted(f"'{names[i]}' ({i})" for i in partial))
+    return None, f"Error: {kind} name '{query}' is ambiguous: {candidates}."
+
+def resolve_light_id(light_id: int, light_name: str, light_info: dict[str, Any]) -> tuple[int | None, str | None]:
+    """Light ID from an explicit ``light_id`` (priority) or from ``light_name``."""
+    if light_id:
+        if not validate_light_id(light_id, light_info):
+            return None, f"Error: Light with ID {light_id} not found."
+        return light_id, None
+    if not light_name:
+        return None, "Error: give a light_id or a light_name."
+    lid, error = resolve_name(light_name, {i: info.get("name", "") for i, info in light_info.items()}, "light")
+    return (int(lid), None) if lid is not None else (None, error)
+
 def validate_light_id(light_id: int, light_info: dict[str, Any]) -> bool:
     """
     Validate that a light ID exists in the light information dictionary.
@@ -382,12 +422,14 @@ def get_all_scenes(ctx: Context) -> str:
 # --- Tools ---
 
 @mcp.tool()
-def turn_on_light(light_id: int, ctx: Context) -> str:
+def turn_on_light(ctx: Context, light_id: int = 0, light_name: str = "") -> str:
     """
-    Turn on a specific light by ID.
+    Turn on a specific light, by ID or by name.
 
     Args:
-        light_id: The ID of the light to turn on
+        light_id: The ID of the light to turn on (takes priority over light_name)
+        light_name: The light's name, case and accent insensitive; a partial
+            name works when it matches a single light
 
     Returns:
         Confirmation message
@@ -395,9 +437,9 @@ def turn_on_light(light_id: int, ctx: Context) -> str:
     bridge, light_info = get_bridge_ctx(ctx)
 
     try:
-        # Validate light ID
-        if not validate_light_id(light_id, light_info):
-            return f"Error: Light with ID {light_id} not found."
+        light_id, error = resolve_light_id(light_id, light_name, light_info)
+        if error:
+            return error
 
         bridge.set_light(light_id, 'on', True)
         return f"Light {light_id} ({light_info[str(light_id)]['name']}) turned on."
@@ -406,12 +448,14 @@ def turn_on_light(light_id: int, ctx: Context) -> str:
         return f"Error: {str(e)}"
 
 @mcp.tool()
-def turn_off_light(light_id: int, ctx: Context) -> str:
+def turn_off_light(ctx: Context, light_id: int = 0, light_name: str = "") -> str:
     """
-    Turn off a specific light by ID.
+    Turn off a specific light, by ID or by name.
 
     Args:
-        light_id: The ID of the light to turn off
+        light_id: The ID of the light to turn off (takes priority over light_name)
+        light_name: The light's name, case and accent insensitive; a partial
+            name works when it matches a single light
 
     Returns:
         Confirmation message
@@ -419,9 +463,9 @@ def turn_off_light(light_id: int, ctx: Context) -> str:
     bridge, light_info = get_bridge_ctx(ctx)
 
     try:
-        # Validate light ID
-        if not validate_light_id(light_id, light_info):
-            return f"Error: Light with ID {light_id} not found."
+        light_id, error = resolve_light_id(light_id, light_name, light_info)
+        if error:
+            return error
 
         bridge.set_light(light_id, 'on', False)
         return f"Light {light_id} ({light_info[str(light_id)]['name']}) turned off."
@@ -718,6 +762,40 @@ def set_scene(group_id: int, scene_id: str, ctx: Context) -> str:
         return f"Scene '{scene_name}' applied to group '{group_name}'."
     except Exception as e:
         logger.error(f"Error applying scene {scene_id} to group {group_id}: {e}")
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def activate_scene_by_name(scene_name: str, ctx: Context, group_id: int | None = None) -> str:
+    """
+    Find a scene by name and apply it.
+
+    Args:
+        scene_name: The scene's name, case and accent insensitive; a partial
+            name works when it matches a single scene
+        group_id: The group to apply it to. By default, the group the scene
+            belongs to (room scenes), or group 0 (all lights) for other scenes
+
+    Returns:
+        Confirmation message
+    """
+    bridge, _ = get_bridge_ctx(ctx)
+
+    try:
+        scenes = bridge.get_scene()
+        scene_id, error = resolve_name(scene_name, {i: sc.get('name', '') for i, sc in scenes.items()}, "scene")
+        if error:
+            return error
+
+        if group_id is None:
+            group_id = int(scenes[scene_id].get('group') or 0)
+        if group_id != 0 and not validate_group_id(group_id, bridge):
+            return f"Error: Group with ID {group_id} not found."
+
+        group_name = "all lights" if group_id == 0 else bridge.get_group(group_id).get('name', f"Group {group_id}")
+        bridge.set_group(group_id, 'scene', scene_id)
+        return f"Scene '{scenes[scene_id].get('name', scene_id)}' applied to group '{group_name}'."
+    except Exception as e:
+        logger.error(f"Error activating scene '{scene_name}': {e}")
         return f"Error: {str(e)}"
 
 # --- Helper Tools ---

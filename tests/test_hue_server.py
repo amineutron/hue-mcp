@@ -123,3 +123,81 @@ def test_get_all_lights():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+LIGHTS = {
+    "1": {"name": "Salon", "type": "Extended color light", "state": {"on": False}},
+    "2": {"name": "Lampe salon", "type": "Extended color light", "state": {"on": False}},
+    "3": {"name": "Bureau", "type": "Dimmable light", "state": {"on": True}},
+}
+
+
+@pytest.mark.parametrize("query, expected", [
+    ("Salon", "1"),          # exact match wins over the partial "Lampe salon"
+    ("salón", "1"),          # case and accent insensitive
+    ("bur", "3"),            # unique partial match
+    ("LAMPE", "2"),
+])
+def test_resolve_name_matches(query, expected):
+    from hue_server import resolve_name
+
+    names = {i: light["name"] for i, light in LIGHTS.items()}
+    assert resolve_name(query, names, "light") == (expected, None)
+
+
+def test_resolve_name_reports_ambiguous_and_missing_names():
+    from hue_server import resolve_name
+
+    names = {"1": "Lampe salon", "2": "Lampe bureau"}
+    lid, error = resolve_name("lampe", names, "light")
+    assert lid is None and "ambiguous" in error and "Lampe salon" in error and "Lampe bureau" in error
+    lid, error = resolve_name("cuisine", names, "light")
+    assert lid is None and "no light named" in error
+
+
+def test_resolve_light_id_prefers_the_id():
+    from hue_server import resolve_light_id
+
+    assert resolve_light_id(3, "Salon", LIGHTS) == (3, None)
+    assert resolve_light_id(0, "Salon", LIGHTS) == (1, None)
+    assert resolve_light_id(9, "", LIGHTS)[1] == "Error: Light with ID 9 not found."
+    assert resolve_light_id(0, "", LIGHTS)[0] is None
+
+
+def _ctx_with_bridge(monkeypatch, bridge, light_info=LIGHTS):
+    from unittest.mock import MagicMock
+
+    import hue_server
+
+    monkeypatch.setattr(hue_server, "get_bridge_ctx", lambda ctx: (bridge, light_info))
+    return MagicMock()
+
+
+def test_turn_on_light_by_name(monkeypatch):
+    from unittest.mock import MagicMock
+
+    from hue_server import turn_on_light
+
+    bridge = MagicMock()
+    ctx = _ctx_with_bridge(monkeypatch, bridge)
+    assert turn_on_light(ctx, light_name="bureau") == "Light 3 (Bureau) turned on."
+    bridge.set_light.assert_called_once_with(3, "on", True)
+
+
+def test_activate_scene_by_name_uses_the_scene_room(monkeypatch):
+    from unittest.mock import MagicMock
+
+    from hue_server import activate_scene_by_name
+
+    bridge = MagicMock()
+    bridge.get_scene.return_value = {
+        "abc": {"name": "Soirée", "group": "5"},
+        "def": {"name": "Lecture"},  # LightScene: no group
+    }
+    bridge.get_group.side_effect = lambda gid=None: {5: {"name": "Living room"}}.get(gid, {}) if gid else {"5": {}}
+    ctx = _ctx_with_bridge(monkeypatch, bridge)
+
+    assert activate_scene_by_name("soiree", ctx) == "Scene 'Soirée' applied to group 'Living room'."
+    bridge.set_group.assert_called_with(5, "scene", "abc")
+    assert activate_scene_by_name("lecture", ctx) == "Scene 'Lecture' applied to group 'all lights'."
+    bridge.set_group.assert_called_with(0, "scene", "def")
