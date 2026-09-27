@@ -123,3 +123,34 @@ def test_get_all_lights():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_phue_logger_does_not_log_the_bridge_username():
+    """phue logs 'Using username: <secret>' at INFO; it must stay silent at that level."""
+    import logging
+
+    import hue_server  # noqa: F401  (importing configures the loggers)
+
+    assert logging.getLogger("phue").getEffectiveLevel() >= logging.WARNING
+
+
+async def test_saved_config_is_owner_only(tmp_path, monkeypatch):
+    """The config file stores the bridge username (pairing secret): mode 0600, dir 0700."""
+    import stat
+    from unittest.mock import MagicMock
+
+    import hue_server
+
+    config_dir = tmp_path / "hue-mcp"
+    monkeypatch.setattr(hue_server, "CONFIG_DIR", str(config_dir))
+    monkeypatch.setattr(hue_server, "CONFIG_FILE", str(config_dir / "config.json"))
+    monkeypatch.setattr(hue_server, "BRIDGE_IP", "192.0.2.10")
+    bridge = MagicMock(ip="192.0.2.10", username="secret-username")
+    bridge.get_light.return_value = {}
+    monkeypatch.setattr(hue_server, "Bridge", MagicMock(return_value=bridge))
+
+    async with hue_server.hue_lifespan(MagicMock()):
+        pass
+
+    assert stat.S_IMODE((config_dir / "config.json").stat().st_mode) == 0o600
+    assert stat.S_IMODE(config_dir.stat().st_mode) == 0o700

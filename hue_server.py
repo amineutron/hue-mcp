@@ -66,6 +66,10 @@ logging.basicConfig(level=logging.INFO,
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("hue-mcp")
 
+# phue logs "Using username: <username>" at INFO on every connection. That
+# username is the bridge pairing secret: anyone holding it controls the lights.
+logging.getLogger("phue").setLevel(logging.WARNING)
+
 # --- Server Context Setup ---
 
 @dataclass
@@ -85,7 +89,7 @@ async def hue_lifespan(server: FastMCP) -> AsyncIterator[HueContext]:
     3. Building a cache of light information
     """
     # Ensure config directory exists
-    os.makedirs(CONFIG_DIR, exist_ok=True)
+    os.makedirs(CONFIG_DIR, mode=0o700, exist_ok=True)
 
     # Load saved config if it exists
     bridge_ip = BRIDGE_IP
@@ -117,12 +121,16 @@ async def hue_lifespan(server: FastMCP) -> AsyncIterator[HueContext]:
         bridge.connect()
 
         # Save the configuration
-        with open(CONFIG_FILE, 'w') as f:
+        # The file holds the bridge username (the pairing secret): create it
+        # owner-only from the start rather than chmod-ing it after the write.
+        fd = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w') as f:
             json.dump({
                 'bridge_ip': bridge.ip,
                 'username': bridge.username
             }, f)
-            logger.info(f"Saved configuration to {CONFIG_FILE}")
+        os.chmod(CONFIG_FILE, 0o600)  # an existing, older file keeps its mode otherwise
+        logger.info(f"Saved configuration to {CONFIG_FILE}")
 
         # Build a cache of light information for faster access
         light_info = bridge.get_light()
