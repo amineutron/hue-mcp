@@ -1201,6 +1201,9 @@ def set_light_effect(light_id: int, effect: str, ctx: Context) -> str:
 # --- HueBeat : controle du beat-sync Entertainment API ---
 
 _HUE_BEAT_PY    = os.environ.get("HUE_BEAT_PATH", "")  # chemin vers hue_beat.py (projet ironman-hue), optionnel
+# Python qui lance hue_beat.py : il lui faut numpy et requests, que l'environnement de ce serveur n'a pas
+# forcement. Sans ce reglage, on garde le Python du serveur (comportement d'avant).
+_HUE_BEAT_PYTHON = os.environ.get("HUE_BEAT_PYTHON", "") or sys.executable
 _HUE_BEAT_PID   = "/tmp/ironman_hue.pid"
 _HUE_BEAT_CTRL  = "/tmp/lyra_hue_beat.ctrl"
 _HUE_BEAT_STATE = "/tmp/lyra_hue_beat.state.json"
@@ -1268,7 +1271,7 @@ def hue_beat_start(mode: str = "", palette: str = "auto", bass_only: bool = True
         return (f"hue_beat.py introuvable: {_HUE_BEAT_PY}\n"
                 f"Definir HUE_BEAT_PATH dans l'environnement ou config.yaml.")
 
-    args = [sys.executable, _HUE_BEAT_PY, f"--mode={mode}", f"--palette={palette}"]
+    args = [_HUE_BEAT_PYTHON, _HUE_BEAT_PY, f"--mode={mode}", f"--palette={palette}"]
     if bass_only:
         args.append("--bass-only")
 
